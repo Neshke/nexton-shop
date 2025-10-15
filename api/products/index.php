@@ -243,30 +243,60 @@ switch ($method) {
       if ($id) {
         $product->id = $id;
         
-        // Get the current product to get the image URL
+        // Get the current product
         $currentProduct = $product->getOne();
         
         if ($currentProduct) {
-          // Set the image URL to delete
-          $product->slika_url = $currentProduct['slika_url'] ?? '';
+          // Check if product is referenced in order items
+          $hasOrderItems = $product->hasOrderItems();
           
-          // Delete the image file first
-          $imageDeleted = $product->deleteProductImage();
-          
-          // Now delete the product from the database
-          if ($product->delete()) {
-            http_response_code(200);
-            echo json_encode([
-              'status' => 200,
-              'message' => 'Product deleted successfully' . 
-                ($imageDeleted ? '' : ' (Note: Unable to delete associated image file)')
-            ]);
+          if ($hasOrderItems) {
+            // Soft delete - mark as inactive instead of actual deletion
+            $product->naziv = $currentProduct['naziv'];
+            $product->slug = $currentProduct['slug'];
+            $product->opis = $currentProduct['opis'];
+            $product->cena = $currentProduct['cena'];
+            $product->akcijska_cena = $currentProduct['akcijska_cena'];
+            $product->kategorija_id = $currentProduct['kategorija_id'];
+            $product->kolicina_na_stanju = $currentProduct['kolicina_na_stanju'];
+            $product->slika_url = $currentProduct['slika_url'];
+            $product->istaknuto = $currentProduct['istaknuto'];
+            $product->aktivan = 0;
+            
+            if ($product->update()) {
+              http_response_code(200);
+              echo json_encode([
+                'status' => 200,
+                'message' => 'Product deactivated successfully (cannot be deleted due to existing orders)',
+                'action' => 'soft_delete'
+              ]);
+            } else {
+              http_response_code(500);
+              echo json_encode([
+                'status' => 500,
+                'message' => 'Unable to deactivate product'
+              ]);
+            }
           } else {
-            http_response_code(500);
-            echo json_encode([
-              'status' => 500,
-              'message' => 'Unable to delete product'
-            ]);
+            // No order references, safe to delete
+            $product->slika_url = $currentProduct['slika_url'] ?? '';
+            $imageDeleted = $product->deleteProductImage();
+            
+            if ($product->delete()) {
+              http_response_code(200);
+              echo json_encode([
+                'status' => 200,
+                'message' => 'Product deleted successfully' . 
+                  ($imageDeleted ? '' : ' (Note: Unable to delete associated image file)'),
+                'action' => 'hard_delete'
+              ]);
+            } else {
+              http_response_code(500);
+              echo json_encode([
+                'status' => 500,
+                'message' => 'Unable to delete product'
+              ]);
+            }
           }
         } else {
           http_response_code(404);

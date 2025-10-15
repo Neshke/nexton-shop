@@ -36,6 +36,26 @@ if ($num > 0) {
     while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
         extract($row); // Ekstrahuje promenljive: $id, $korisnik_id, $ime_prezime, itd.
 
+        // Dohvatanje stavki za trenutnu porudžbinu
+        $stmt_items = $db->prepare("
+            SELECT
+                sp.id AS stavka_id,
+                sp.proizvod_id,
+                p.naziv AS naziv_proizvoda,
+                sp.kolicina,
+                sp.cena_po_komadu,
+                (sp.kolicina * sp.cena_po_komadu) AS ukupna_cena_stavke
+            FROM
+                stavke_porudzbine sp
+            JOIN
+                products p ON sp.proizvod_id = p.id
+            WHERE
+                sp.porudzbina_id = :order_id
+        ");
+        $stmt_items->bindParam(':order_id', $id);
+        $stmt_items->execute();
+        $items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
+
         // Construct order item - popunjavamo sva polja koja se vraćaju iz baze
         $order_item = array(
             'id' => $id,
@@ -46,7 +66,8 @@ if ($num > 0) {
             'datum_porudzbine' => $datum_porudzbine,
             'status' => $status,
             'ukupan_iznos' => $ukupan_iznos,
-            'kreirano_u' => isset($kreirano_u) ? $kreirano_u : null // Ako postoji ovo polje
+            'kreirano_u' => isset($kreirano_u) ? $kreirano_u : null, // Ako postoji ovo polje
+            'stavke' => $items // Dodajemo stavke porudžbine
             // Dodaj ostala polja ako ih imaš u SELECT upitu u modelu
         );
         array_push($orders_arr['data'], $order_item);
@@ -55,11 +76,10 @@ if ($num > 0) {
     http_response_code(200);
     echo json_encode($orders_arr); // Vraća {"data": [...]} ili kompletan objekat ako su dodati status/success
 } else {
-    // No orders
-    http_response_code(404); // Ispravan status za "nema resursa"
+    // No orders - this is not an error, just an empty result
+    http_response_code(200); // Changed from 404 to 200
     echo json_encode(
-        // Vraćamo konzistentan format poruke
-        array('success' => false, 'message' => 'Nema pronađenih porudžbina za ovog korisnika.', 'data' => []) // data: [] je dobra praksa
+        array('success' => true, 'message' => 'Korisnik nema porudžbine.', 'data' => []) // Changed success to true
     );
 }
 ?>

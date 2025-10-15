@@ -237,6 +237,21 @@ class Product
   }
 
   /**
+     * Check if product has associated order items
+     *
+     * @return boolean True if product is referenced in order items, False otherwise
+     */
+    public function hasOrderItems() {
+        $query = "SELECT COUNT(*) as count FROM stavke_porudzbine WHERE proizvod_id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $this->id);
+        $stmt->execute();
+        
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] > 0;
+    }
+
+  /**
      * Delete the image file associated with this product
      *
      * @return boolean True if image was deleted or didn't exist, False on failure

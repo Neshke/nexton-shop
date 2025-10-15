@@ -47,7 +47,7 @@ function sendOrderConfirmationEmail($userEmail, $userName, $orderId, $totalAmoun
         // Tvoja regularna Gmail lozinka NEĆE raditi sa 2FA.
         // Ako ne koristiš 2FA, unesi svoju regularnu Gmail lozinku,
         // ali možda ćeš morati da omogućiš "Less secure app access" na Google nalogu.
-        $mail->Password   = 'ikxj pegf nqvc kmju';
+        $mail->Password   = 'xzkt fsit lvbp peim';
 
         // Enkripcija i port za Gmail
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;

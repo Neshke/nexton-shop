@@ -30,7 +30,7 @@ if (
 }
 
 // Priprema podataka za model Order - sanitizacija je već u modelu, ali može i ovde
-$korisnik_id_val = isset($data->user_id) && !empty($data->user_id) ? filter_var($data->user_id, FILTER_SANITIZE_NUMBER_INT) : null;
+$korisnik_id_val = isset($data->korisnik_id) && !empty($data->korisnik_id) ? filter_var($data->korisnik_id, FILTER_SANITIZE_NUMBER_INT) : null;
 $ime_prezime_val = trim(strip_tags($data->ime_prezime));
 $adresa_val = trim(strip_tags($data->adresa));
 $telefon_val = trim(strip_tags($data->telefon));

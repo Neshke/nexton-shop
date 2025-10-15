@@ -93,5 +93,34 @@ class Order {
         $stmt->execute();
         return $stmt;
     }
+
+    // Update order status
+    public function updateStatus($order_id, $new_status) {
+        // $order_id is expected to be an integer from the controller.
+        // $new_status is expected to be a pre-validated string from the allowed list (already sanitized by controller).
+
+        $query = "UPDATE " . $this->table_name . "
+                  SET status = :status, azurirano_u = NOW()
+                  WHERE id = :id";
+
+        $stmt = $this->conn->prepare($query);
+
+        // Bind values
+        // $new_status is used directly as it's assumed to be validated and sanitized by the caller.
+        $stmt->bindParam(":status", $new_status, PDO::PARAM_STR); 
+        $stmt->bindParam(":id", $order_id, PDO::PARAM_INT); // Ensure $order_id is treated as an integer
+
+        // Execute query
+        if ($stmt->execute()) {
+            // Return true only if at least one row was affected by the update.
+            // If rowCount() is 0, it could mean the order_id was not found,
+            // or the status was already set to the $new_status value.
+            return $stmt->rowCount() > 0;
+        }
+        
+        // Optional: Log error if execute fails
+        // error_log("PDO Error in updateStatus for order ID {$order_id}: " . implode(":", $stmt->errorInfo()));
+        return false;
+    }
 }
 ?>
